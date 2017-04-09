@@ -32,14 +32,10 @@ xcb_pixmap_t image_to_pixmap(xcb_connection_t *conn, xcb_screen_t *screen, xcb_i
 void get_rgba_image_data(xcb_image_t *image, uint8_t *rgba) {
     for (int y = 0; y < image->height; y++) {
         for (int x = 0; x < image->width; x++) {
-            int b = IMG_AT(x, y, 0);
-            int g = IMG_AT(x, y, 1);
-            int r = IMG_AT(x, y, 2);
-            int a = IMG_AT(x, y, 3);
-            RGBA_AT(x, y, 0) = r;
-            RGBA_AT(x, y, 1) = g;
-            RGBA_AT(x, y, 2) = b;
-            RGBA_AT(x, y, 3) = a;
+            RGBA_AT(x, y, 0) = IMG_AT(x, y, 2); // r
+            RGBA_AT(x, y, 1) = IMG_AT(x, y, 1); // g
+            RGBA_AT(x, y, 2) = IMG_AT(x, y, 0); // b
+            RGBA_AT(x, y, 3) = IMG_AT(x, y, 3); // a
         }
     }
 }
@@ -47,12 +43,9 @@ void get_rgba_image_data(xcb_image_t *image, uint8_t *rgba) {
 void get_rgb_image_data(xcb_image_t *image, uint8_t *rgb) {
     for (int y = 0; y < image->height; y++) {
         for (int x = 0; x < image->width; x++) {
-            int b = IMG_AT(x, y, 0);
-            int g = IMG_AT(x, y, 1);
-            int r = IMG_AT(x, y, 2);
-            RGB_AT(x, y, 0) = r;
-            RGB_AT(x, y, 1) = g;
-            RGB_AT(x, y, 2) = b;
+            RGB_AT(x, y, 0) = IMG_AT(x, y, 2); // r
+            RGB_AT(x, y, 1) = IMG_AT(x, y, 1); // g
+            RGB_AT(x, y, 2) = IMG_AT(x, y, 0); // b
         }
     }
 }

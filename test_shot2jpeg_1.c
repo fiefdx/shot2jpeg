@@ -18,16 +18,16 @@ int main() {
 
     xcb_image_t *screenshot = take_screenshot(conn, screen);
     xcb_pixmap_t pixmap = image_to_pixmap(conn, screen, screenshot);
-    printf("screenshot: width: %d, height: %d, size: %d, len: %lu\n", screenshot->width, screenshot->height, screenshot->size, sizeof(screenshot->data)/sizeof(uint8_t));
+    printf("screenshot: width: %d, height: %d, size: %d\n", screenshot->width, screenshot->height, screenshot->size);
     printf("pixmap: %d\n", pixmap);
     gettimeofday(&ss, NULL);
 
     write_to_jpeg("./test.jpeg", 100, screenshot);
 
     gettimeofday(&sss, NULL);
-    printf("shot use: %ld, write use: %ld\n",
-        (ss.tv_sec - s.tv_sec) * 1000000 + (ss.tv_usec - s.tv_usec),
-        (sss.tv_sec - ss.tv_sec) * 1000000 + (sss.tv_usec - ss.tv_usec));
+    printf("shot use: %.3fs, write use: %.3fs\n",
+        ((ss.tv_sec - s.tv_sec) * 1000000 + (ss.tv_usec - s.tv_usec))/1000000.0,
+        ((sss.tv_sec - ss.tv_sec) * 1000000 + (sss.tv_usec - ss.tv_usec))/1000000.0);
 
     printf("test shot2jpeg end\n");
     return 0;
