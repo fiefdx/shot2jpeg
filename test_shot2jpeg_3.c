@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
         FILE *stream;
         stream = open_memstream(&bp, &size);
         write_to_jpeg_buffer(stream, quality, screenshot);
+        free(bp);
         printf("buffer: size: %d\n", size);
     }
     gettimeofday(&ss, NULL);
@@ -72,6 +73,7 @@ int main(int argc, char *argv[]) {
 
     fwrite(bp, sizeof(char), size, outfile);
     fclose(outfile);
+    free(bp);
 
     gettimeofday(&sss, NULL);
     printf("shot use: %.3fs, write use: %.3fs, fps: %.3f\n",

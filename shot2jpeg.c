@@ -2,9 +2,9 @@
 
 #include "shot2jpeg.h"
 
-#define IMG_AT(x, y, i) image->data[((y) * image->width + (x)) * 4 + (i)]
-#define RGBA_AT(x, y, i) rgba[((y) * image->width + (x)) * 4 + (i)]
-#define RGB_AT(x, y, i) rgb[((y) * image->width + (x)) * 3 + (i)]
+#define IMG_AT(x, y, i) image->data[(((y_width) + (x)) << 2) + (i)]
+#define RGBA_AT(x, y, i) rgba[(((y_width) + (x)) << 2) + (i)]
+#define RGB_AT(x, y, i) rgb[((y_width) + (x)) * 3 + (i)]
 
 xcb_image_t *take_screenshot(xcb_connection_t *conn, xcb_screen_t *screen) {
     return xcb_image_get(conn,
@@ -31,6 +31,7 @@ xcb_pixmap_t image_to_pixmap(xcb_connection_t *conn, xcb_screen_t *screen, xcb_i
 
 void get_rgba_image_data(xcb_image_t *image, uint8_t *rgba) {
     for (int y = 0; y < image->height; y++) {
+        int y_width = y*image->width;
         for (int x = 0; x < image->width; x++) {
             RGBA_AT(x, y, 0) = IMG_AT(x, y, 2); // r
             RGBA_AT(x, y, 1) = IMG_AT(x, y, 1); // g
@@ -40,8 +41,20 @@ void get_rgba_image_data(xcb_image_t *image, uint8_t *rgba) {
     }
 }
 
+void get_rgba_image_data2(xcb_image_t *image, uint8_t *rgba) {
+    memcpy(rgba, image->data, image->size);
+    for (int y = 0; y < image->height; y++) {
+        int y_width = y*image->width;
+        for (int x = 0; x < image->width; x++) {
+            RGBA_AT(x, y, 0) = IMG_AT(x, y, 2); // r
+            RGBA_AT(x, y, 2) = IMG_AT(x, y, 0); // b
+        }
+    }
+}
+
 void get_rgb_image_data(xcb_image_t *image, uint8_t *rgb) {
     for (int y = 0; y < image->height; y++) {
+        int y_width = y*image->width;
         for (int x = 0; x < image->width; x++) {
             RGB_AT(x, y, 0) = IMG_AT(x, y, 2); // r
             RGB_AT(x, y, 1) = IMG_AT(x, y, 1); // g
@@ -51,8 +64,8 @@ void get_rgb_image_data(xcb_image_t *image, uint8_t *rgb) {
 }
 
 void write_to_jpeg(char *filename, int quality, xcb_image_t *image) {
-    uint8_t data[image->width*image->height*3];
-    get_rgb_image_data(image, data);
+    uint8_t data[image->width*image->height*4];
+    get_rgba_image_data2(image, data);
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
     FILE *outfile;
@@ -68,15 +81,19 @@ void write_to_jpeg(char *filename, int quality, xcb_image_t *image) {
 
     cinfo.image_width = image->width;
     cinfo.image_height = image->height;
-    cinfo.input_components = 3;
-    cinfo.in_color_space = JCS_RGB;
+    cinfo.input_components = 4;
+    cinfo.in_color_space = getJCS_EXT_RGBA();
+    if (cinfo.in_color_space == JCS_UNKNOWN) {
+        fprintf(stderr, "JCS_EXT_RGBA is not supported (probably built without libjpeg-trubo)");
+        exit(1);
+    }
 
     jpeg_set_defaults(&cinfo);
     jpeg_set_quality(&cinfo, quality, TRUE);
 
     jpeg_start_compress(&cinfo, TRUE);
 
-    row_stride = image->width * 3;
+    row_stride = image->width * 4;
 
     while (cinfo.next_scanline < cinfo.image_height) {
         row_pointer[0] = &data[cinfo.next_scanline * row_stride];
@@ -89,8 +106,8 @@ void write_to_jpeg(char *filename, int quality, xcb_image_t *image) {
 }
 
 void write_to_jpeg_buffer(FILE *stream, int quality, xcb_image_t *image) {
-    uint8_t data[image->width*image->height*3];
-    get_rgb_image_data(image, data);
+    uint8_t data[image->width*image->height*4];
+    get_rgba_image_data2(image, data);
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
     JSAMPROW row_pointer[1];
@@ -101,15 +118,19 @@ void write_to_jpeg_buffer(FILE *stream, int quality, xcb_image_t *image) {
 
     cinfo.image_width = image->width;
     cinfo.image_height = image->height;
-    cinfo.input_components = 3;
-    cinfo.in_color_space = JCS_RGB;
+    cinfo.input_components = 4;
+    cinfo.in_color_space = getJCS_EXT_RGBA();
+    if (cinfo.in_color_space == JCS_UNKNOWN) {
+        fprintf(stderr, "JCS_EXT_RGBA is not supported (probably built without libjpeg-trubo)");
+        exit(1);
+    }
 
     jpeg_set_defaults(&cinfo);
     jpeg_set_quality(&cinfo, quality, TRUE);
 
     jpeg_start_compress(&cinfo, TRUE);
 
-    row_stride = image->width * 3;
+    row_stride = image->width * 4;
 
     while (cinfo.next_scanline < cinfo.image_height) {
         row_pointer[0] = &data[cinfo.next_scanline * row_stride];

@@ -46,8 +46,13 @@ int main(int argc, char *argv[]) {
         xcb_pixmap_t pixmap = image_to_pixmap(conn, screen, screenshot);
         printf("screenshot: width: %d, height: %d, size: %d\n", screenshot->width, screenshot->height, screenshot->size);
         printf("pixmap: %d\n", pixmap);
-        uint8_t data[screenshot->width*screenshot->height*3];
-        get_rgb_image_data(screenshot, data);
+        uint8_t data[screenshot->width*screenshot->height*4];
+        struct timeval t, tt;
+        gettimeofday(&t, NULL);
+        get_rgba_image_data2(screenshot, data);
+        gettimeofday(&tt, NULL);
+        printf("BGRA to RGBA use: %.3fs\n",
+            ((tt.tv_sec - t.tv_sec) * 1000000 + (tt.tv_usec - t.tv_usec))/1000000.0);
     }
     gettimeofday(&ss, NULL);
 
