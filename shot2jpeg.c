@@ -87,3 +87,36 @@ void write_to_jpeg(char *filename, int quality, xcb_image_t *image) {
     fclose(outfile);
     jpeg_destroy_compress(&cinfo);
 }
+
+void write_to_jpeg_buffer(FILE *stream, int quality, xcb_image_t *image) {
+    uint8_t data[image->width*image->height*3];
+    get_rgb_image_data(image, data);
+    struct jpeg_compress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+    JSAMPROW row_pointer[1];
+    int row_stride;
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_compress(&cinfo);
+    jpeg_stdio_dest(&cinfo, stream);
+
+    cinfo.image_width = image->width;
+    cinfo.image_height = image->height;
+    cinfo.input_components = 3;
+    cinfo.in_color_space = JCS_RGB;
+
+    jpeg_set_defaults(&cinfo);
+    jpeg_set_quality(&cinfo, quality, TRUE);
+
+    jpeg_start_compress(&cinfo, TRUE);
+
+    row_stride = image->width * 3;
+
+    while (cinfo.next_scanline < cinfo.image_height) {
+        row_pointer[0] = &data[cinfo.next_scanline * row_stride];
+        (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+    }
+
+    jpeg_finish_compress(&cinfo);
+    fclose(stream);
+    jpeg_destroy_compress(&cinfo);
+}
