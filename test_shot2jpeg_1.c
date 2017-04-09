@@ -23,6 +23,7 @@ int main() {
     gettimeofday(&ss, NULL);
 
     write_to_jpeg("./test.jpeg", 100, screenshot);
+    xcb_image_destroy(screenshot);
 
     gettimeofday(&sss, NULL);
     printf("shot use: %.3fs, write use: %.3fs\n",

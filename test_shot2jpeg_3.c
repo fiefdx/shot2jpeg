@@ -21,6 +21,7 @@ int get_int(char *str) {
 
 int main(int argc, char *argv[]) {
     int quality = 100;
+    int frames = 200;
     printf("test shot2jpeg start\n");
 
     if (argc == 2) {
@@ -35,13 +36,13 @@ int main(int argc, char *argv[]) {
 
     xcb_connection_t *conn = xcb_connect(NULL, NULL);
 
-    gettimeofday(&s, NULL);
     const xcb_setup_t *setup = xcb_get_setup(conn);
     xcb_screen_iterator_t iter = xcb_setup_roots_iterator(setup);
     xcb_screen_t *screen = iter.data;
 
-    xcb_image_t *screenshot;
-    for (int i = 0; i < 100; i++) {
+    gettimeofday(&s, NULL);
+    for (int i = 0; i < frames; i++) {
+        xcb_image_t *screenshot;
         screenshot = take_screenshot(conn, screen);
         xcb_pixmap_t pixmap = image_to_pixmap(conn, screen, screenshot);
         printf("screenshot: width: %d, height: %d, size: %d\n", screenshot->width, screenshot->height, screenshot->size);
@@ -52,10 +53,15 @@ int main(int argc, char *argv[]) {
         FILE *stream;
         stream = open_memstream(&bp, &size);
         write_to_jpeg_buffer(stream, quality, screenshot);
+        xcb_image_destroy(screenshot);
         free(bp);
         printf("buffer: size: %d\n", size);
     }
     gettimeofday(&ss, NULL);
+
+    xcb_image_t *screenshot;
+    screenshot = take_screenshot(conn, screen);
+    xcb_pixmap_t pixmap = image_to_pixmap(conn, screen, screenshot);
 
     char *bp;
     size_t size;
@@ -73,13 +79,14 @@ int main(int argc, char *argv[]) {
 
     fwrite(bp, sizeof(char), size, outfile);
     fclose(outfile);
+    xcb_image_destroy(screenshot);
     free(bp);
 
     gettimeofday(&sss, NULL);
     printf("shot use: %.3fs, write use: %.3fs, fps: %.3f\n",
         ((ss.tv_sec - s.tv_sec) * 1000000 + (ss.tv_usec - s.tv_usec))/1000000.0,
         ((sss.tv_sec - ss.tv_sec) * 1000000 + (sss.tv_usec - ss.tv_usec))/1000000.0,
-        100.0/(((ss.tv_sec - s.tv_sec) * 1000000 + (ss.tv_usec - s.tv_usec))/1000000.0));
+        frames/(((ss.tv_sec - s.tv_sec) * 1000000 + (ss.tv_usec - s.tv_usec))/1000000.0));
 
     printf("test shot2jpeg end\n");
     return 0;
